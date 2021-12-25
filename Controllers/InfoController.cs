@@ -12,5 +12,12 @@ namespace TSApi.Controllers
         {
             return JsonConvert.SerializeObject(TorAPI.db.Select(i => i.Value), Formatting.Indented);
         }
+
+
+        [Route("xrealip")]
+        public string XRealIP()
+        {
+            return HttpContext.Connection.RemoteIpAddress.ToString();
+        }
     }
 }
