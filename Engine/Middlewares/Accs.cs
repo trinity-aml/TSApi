@@ -125,6 +125,12 @@ namespace TSApi.Engine.Middlewares
 
                     if (Startup.usersDb.TryGetValue(login, out UserData _u) && _u.passwd == passwd)
                     {
+                        if (!_u.IsShared && IsLockHostOrUser(httpContext, _u.login))
+                        {
+                            httpContext.Response.StatusCode = 403;
+                            return Task.CompletedTask;
+                        }
+
                         httpContext.Features.Set(_u);
                         return _next(httpContext);
                     }
