@@ -14,6 +14,8 @@ namespace TSApi.Models
 
         public int worknodetominutes { get; set; } = 4;
 
+        public int maxiptoIsLockHostOrUser { get; set; } = 8;
+
         public bool AuthorizationRequired { get; set; } = true;
 
         public List<string> KnownProxies { get; set; } = new List<string>();

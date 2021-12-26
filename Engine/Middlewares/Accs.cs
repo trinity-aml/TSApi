@@ -35,7 +35,7 @@ namespace TSApi.Engine.Middlewares
                 _ips.Add(clientIP);
                 memoryCache.Set(memKeyLocIP, _ips, DateTime.Today.AddDays(1));
 
-                if (_ips.Count >= 8)
+                if (_ips.Count >= Startup.settings.maxiptoIsLockHostOrUser)
                     return true;
             }
             else
