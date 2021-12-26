@@ -32,12 +32,8 @@ namespace TSApi
 
             if (System.IO.File.Exists($"{appfolder}/settings.json"))
             {
-                try
-                {
-                    Startup.settings = JsonConvert.DeserializeObject<Setting>(System.IO.File.ReadAllText($"{appfolder}/settings.json"));
-                    Startup.settings.appfolder = appfolder;
-                }
-                catch { }
+                Startup.settings = JsonConvert.DeserializeObject<Setting>(System.IO.File.ReadAllText($"{appfolder}/settings.json"));
+                Startup.settings.appfolder = appfolder;
             }
             else
             {

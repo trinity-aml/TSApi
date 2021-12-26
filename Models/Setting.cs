@@ -14,8 +14,8 @@ namespace TSApi.Models
 
         public int worknodetominutes { get; set; } = 4;
 
-        public bool AuthorizationRequired { get; set; }
+        public bool AuthorizationRequired { get; set; } = true;
 
-        public List<string> KnownProxies = new List<string>();
+        public List<string> KnownProxies { get; set; } = new List<string>();
     }
 }

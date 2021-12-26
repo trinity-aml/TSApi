@@ -1,7 +1,7 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 using System.Threading;
 using TSApi.Engine;
 
@@ -20,6 +20,7 @@ namespace TSApi.Models
 
         public DateTime lastActive { get; set; }
 
+        [JsonIgnore]
         public int countError { get; set; }
 
 

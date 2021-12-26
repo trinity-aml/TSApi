@@ -36,11 +36,7 @@ namespace TSApi
             #region load usersDb.json
             if (System.IO.File.Exists($"{settings.appfolder}/usersDb.json"))
             {
-                try
-                {
-                    usersDb = JsonConvert.DeserializeObject<Dictionary<string, UserData>>(System.IO.File.ReadAllText($"{settings.appfolder}/usersDb.json"));
-                }
-                catch { }
+                usersDb = JsonConvert.DeserializeObject<Dictionary<string, UserData>>(System.IO.File.ReadAllText($"{settings.appfolder}/usersDb.json"));
             }
             else
             {

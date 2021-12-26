@@ -69,29 +69,19 @@ namespace TSApi.Engine.Middlewares
             if (Startup.settings.AuthorizationRequired)
             {
                 #region Авторизация по домену
-                if (Regex.IsMatch(httpContext.Request.Host.Value, "[^-\\.]+-[^\\.]+\\.[^\\.]+\\.[^\\.]+"))
+                string domainid = Regex.Match(httpContext.Request.Host.Value, "^([^\\.]+)\\.").Groups[1].Value;
+
+                UserData _domainUser = Startup.usersDb.FirstOrDefault(i => i.Value.domainid == domainid).Value;
+                if (_domainUser != null)
                 {
-                    var g = Regex.Match(httpContext.Request.Host.Value, "^([^-\\.]+)-([^\\.]+)\\.").Groups;
-
-                    string login = g[1].Value;
-                    string passwd = g[2].Value;
-
-                    if (Startup.usersDb.TryGetValue(login, out UserData _u) && _u.passwd == passwd)
-                    {
-                        if (!_u.IsShared && IsLockHostOrUser(httpContext, login))
-                        {
-                            httpContext.Response.StatusCode = 403;
-                            return Task.CompletedTask;
-                        }
-
-                        httpContext.Features.Set(_u);
-                        return _next(httpContext);
-                    }
-                    else
+                    if (!_domainUser.IsShared && IsLockHostOrUser(httpContext, _domainUser.login))
                     {
                         httpContext.Response.StatusCode = 403;
                         return Task.CompletedTask;
                     }
+
+                    httpContext.Features.Set(_domainUser);
+                    return _next(httpContext);
                 }
                 #endregion
 

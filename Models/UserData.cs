@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace TSApi.Models
 {
@@ -9,11 +9,16 @@ namespace TSApi.Models
         [JsonIgnore]
         public string passwd { get; set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        [JsonIgnore]
+        public string domainid { get; set; }
+
+        [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string torPath { get; set; }
 
+        [JsonIgnore]
         public bool allowedToChangeSettings { get; set; }
 
+        [JsonIgnore]
         public bool IsShared { get; set; }
     }
 }
