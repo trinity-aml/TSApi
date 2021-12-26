@@ -2,12 +2,12 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using System.Text.Json.Serialization;
 using TSApi.Engine.Middlewares;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using TSApi.Models;
+using System.Net;
 
 namespace TSApi
 {
@@ -58,11 +58,23 @@ namespace TSApi
             }
             #endregion
 
-            // IP клиента
-            app.UseForwardedHeaders(new ForwardedHeadersOptions
+            #region IP клиента
+            var forwarded = new ForwardedHeadersOptions
             {
                 ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-            });
+            };
+
+            if (settings.KnownProxies != null && settings.KnownProxies.Count > 0)
+            {
+                foreach (string ip in settings.KnownProxies)
+                    forwarded.KnownProxies.Add(IPAddress.Parse(ip));
+            }
+
+            forwarded.KnownProxies.Add(IPAddress.Parse("172.17.0.9"));
+            forwarded.KnownProxies.Add(IPAddress.Parse("172.16.82.1"));
+
+            app.UseForwardedHeaders(forwarded);
+            #endregion
 
             app.UseRouting();
             app.UseModHeaders();

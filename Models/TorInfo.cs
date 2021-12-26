@@ -68,10 +68,8 @@ namespace TSApi.Models
 
             if (user.IsShared)
             {
-                string inDir = Startup.settings?.appfolder ?? "/opt/TSApi";
-
                 foreach (var ip in clientIps)
-                    Bash.Run($"rm -rf {inDir}/sandbox/{user.login}/{ip.Replace(".", "").Replace(":", "")}");
+                    Bash.Run($"rm -rf {Startup.settings.appfolder}/sandbox/{user.login}/{ip.Replace(".", "").Replace(":", "")}");
             }
 
             clientIps.Clear();

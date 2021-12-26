@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace TSApi.Models
 {
@@ -14,5 +15,7 @@ namespace TSApi.Models
         public int worknodetominutes { get; set; } = 4;
 
         public bool AuthorizationRequired { get; set; }
+
+        public List<string> KnownProxies = new List<string>();
     }
 }

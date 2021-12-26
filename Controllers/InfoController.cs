@@ -19,5 +19,12 @@ namespace TSApi.Controllers
         {
             return HttpContext.Connection.RemoteIpAddress.ToString();
         }
+
+
+        [Route("headers")]
+        public ActionResult Headers()
+        {
+            return Json(HttpContext.Request.Headers);
+        }
     }
 }

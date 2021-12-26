@@ -53,7 +53,7 @@ namespace TSApi.Engine.Middlewares
             #region Служебный запрос
             string clientIp = httpContext.Connection.RemoteIpAddress.ToString();
 
-            if (clientIp == "127.0.0.1" || httpContext.Request.Path.Value.StartsWith("/cron") || httpContext.Request.Path.Value.StartsWith("/torinfo"))
+            if (clientIp == "127.0.0.1" || httpContext.Request.Path.Value.StartsWith("/cron") || httpContext.Request.Path.Value.StartsWith("/torinfo") || httpContext.Request.Path.Value.StartsWith("/xrealip") || httpContext.Request.Path.Value.StartsWith("/headers"))
                 return _next(httpContext);
             #endregion
 
