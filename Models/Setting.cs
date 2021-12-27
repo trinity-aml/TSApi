@@ -18,6 +18,6 @@ namespace TSApi.Models
 
         public bool AuthorizationRequired { get; set; } = true;
 
-        public List<string> KnownProxies { get; set; } = new List<string>();
+        public List<(string ip, int prefixLength)> KnownProxies { get; set; } = new List<(string, int)>();
     }
 }

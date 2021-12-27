@@ -62,12 +62,9 @@ namespace TSApi
 
             if (settings.KnownProxies != null && settings.KnownProxies.Count > 0)
             {
-                foreach (string ip in settings.KnownProxies)
-                    forwarded.KnownProxies.Add(IPAddress.Parse(ip));
+                foreach (var k in settings.KnownProxies)
+                    forwarded.KnownNetworks.Add(new IPNetwork(IPAddress.Parse(k.ip), k.prefixLength));
             }
-
-            forwarded.KnownProxies.Add(IPAddress.Parse("172.17.0.9"));
-            forwarded.KnownProxies.Add(IPAddress.Parse("172.16.82.1"));
 
             app.UseForwardedHeaders(forwarded);
             #endregion
