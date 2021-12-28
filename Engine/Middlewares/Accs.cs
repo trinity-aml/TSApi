@@ -77,7 +77,7 @@ namespace TSApi.Engine.Middlewares
                     if (!_domainUser.IsShared && IsLockHostOrUser(httpContext, _domainUser.login))
                     {
                         httpContext.Response.StatusCode = 403;
-                        return Task.CompletedTask;
+                        return httpContext.Response.WriteAsync($"you ban to {DateTime.Today.AddDays(1).ToString("dd.MM.yyyy hh:mm")}, server time {DateTime.Now.ToString("dd.MM.yyyy hh:mm")}");
                     }
 
                     httpContext.Features.Set(_domainUser);
@@ -93,7 +93,7 @@ namespace TSApi.Engine.Middlewares
                         if (!info.user.IsShared && IsLockHostOrUser(httpContext, info.user.login))
                         {
                             httpContext.Response.StatusCode = 403;
-                            return Task.CompletedTask;
+                            return httpContext.Response.WriteAsync($"you ban to {DateTime.Today.AddDays(1).ToString("dd.MM.yyyy hh:mm")}, server time {DateTime.Now.ToString("dd.MM.yyyy hh:mm")}");
                         }
 
                         httpContext.Features.Set(info.user);
@@ -128,7 +128,7 @@ namespace TSApi.Engine.Middlewares
                         if (!_u.IsShared && IsLockHostOrUser(httpContext, _u.login))
                         {
                             httpContext.Response.StatusCode = 403;
-                            return Task.CompletedTask;
+                            return httpContext.Response.WriteAsync($"you ban to {DateTime.Today.AddDays(1).ToString("dd.MM.yyyy hh:mm")}, server time {DateTime.Now.ToString("dd.MM.yyyy hh:mm")}");
                         }
 
                         httpContext.Features.Set(_u);
