@@ -11,7 +11,7 @@ namespace TSApi
     {
         public static void Main(string[] args)
         {
-            string appfolder = "/opt/TSApi";
+            string appfolder = "/opt/tsapi";
 
             foreach (var line in args)
             {
@@ -23,7 +23,7 @@ namespace TSApi
                 {
                     case "d":
                         {
-                            // -d=/opt/TSApi
+                            // -d=/opt/tsapi
                             appfolder = value;
                             break;
                         }

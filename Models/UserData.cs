@@ -20,5 +20,8 @@ namespace TSApi.Models
 
         [JsonIgnore]
         public bool IsShared { get; set; }
+
+        [JsonIgnore]
+        public byte maxiptoIsLockHostOrUser { get; set; }
     }
 }

@@ -25,23 +25,27 @@ namespace TSApi.Engine.Middlewares
         #endregion
 
         #region IsLockHostOrUser
-        bool IsLockHostOrUser(HttpContext httpContext, string login)
+        bool IsLockHostOrUser(HttpContext httpContext, UserData user, out HashSet<string> ips)
         {
-            string memKeyLocIP = $"memKeyLocIP:{login}:{DateTime.Today.Day}";
+            string memKeyLocIP = $"memKeyLocIP:{user.login}:{DateTime.Today.Day}";
             string clientIP = httpContext.Connection.RemoteIpAddress.ToString();
 
-            if (memoryCache.TryGetValue(memKeyLocIP, out HashSet<string> _ips))
+            if (memoryCache.TryGetValue(memKeyLocIP, out ips))
             {
-                _ips.Add(clientIP);
-                memoryCache.Set(memKeyLocIP, _ips, DateTime.Today.AddDays(1));
+                ips.Add(clientIP);
+                memoryCache.Set(memKeyLocIP, ips, DateTime.Today.AddDays(1));
 
-                if (_ips.Count >= Startup.settings.maxiptoIsLockHostOrUser)
+                int maxiptoIsLockHostOrUser = Startup.settings.maxiptoIsLockHostOrUser;
+                if (user.maxiptoIsLockHostOrUser > 0)
+                    maxiptoIsLockHostOrUser = user.maxiptoIsLockHostOrUser;
+
+                if (ips.Count > maxiptoIsLockHostOrUser)
                     return true;
             }
             else
             {
-                _ips = new HashSet<string>() { clientIP };
-                memoryCache.Set(memKeyLocIP, _ips, DateTime.Today.AddDays(1));
+                ips = new HashSet<string>() { clientIP };
+                memoryCache.Set(memKeyLocIP, ips, DateTime.Today.AddDays(1));
             }
 
             return false;
@@ -58,9 +62,6 @@ namespace TSApi.Engine.Middlewares
             #endregion
 
             #region Методы работающие без авторизации
-            if (httpContext.Request.Path.Value.StartsWith("/echo"))
-                return httpContext.Response.WriteAsync("MatriX.API");
-
             if (httpContext.Request.Path.Value.StartsWith("/shutdown"))
                 return httpContext.Response.WriteAsync("");
             #endregion
@@ -74,10 +75,11 @@ namespace TSApi.Engine.Middlewares
                 UserData _domainUser = Startup.usersDb.FirstOrDefault(i => i.Value.domainid == domainid).Value;
                 if (_domainUser != null)
                 {
-                    if (!_domainUser.IsShared && IsLockHostOrUser(httpContext, _domainUser.login))
+                    if (!_domainUser.IsShared && IsLockHostOrUser(httpContext, _domainUser, out HashSet<string> ips))
                     {
                         httpContext.Response.StatusCode = 403;
-                        return httpContext.Response.WriteAsync($"you ban to {DateTime.Today.AddDays(1).ToString("dd.MM.yyyy hh:mm")}, server time {DateTime.Now.ToString("dd.MM.yyyy hh:mm")}");
+                        httpContext.Response.ContentType = "text/plain; charset=UTF-8";
+                        return httpContext.Response.WriteAsync($"Превышено допустимое количество ip. Разбан через {(int)(DateTime.Today.AddDays(1) - DateTime.Now).TotalMinutes} мин.\n\n" + string.Join(", ", ips));
                     }
 
                     httpContext.Features.Set(_domainUser);
@@ -90,10 +92,11 @@ namespace TSApi.Engine.Middlewares
                 {
                     if (TorAPI.db.LastOrDefault(i => i.Value.clientIps.Contains(clientIp)).Value is TorInfo info)
                     {
-                        if (!info.user.IsShared && IsLockHostOrUser(httpContext, info.user.login))
+                        if (!info.user.IsShared && IsLockHostOrUser(httpContext, info.user, out HashSet<string> ips))
                         {
                             httpContext.Response.StatusCode = 403;
-                            return httpContext.Response.WriteAsync($"you ban to {DateTime.Today.AddDays(1).ToString("dd.MM.yyyy hh:mm")}, server time {DateTime.Now.ToString("dd.MM.yyyy hh:mm")}");
+                            httpContext.Response.ContentType = "text/plain; charset=UTF-8";
+                            return httpContext.Response.WriteAsync($"Превышено допустимое количество ip. Разбан через {(int)(DateTime.Today.AddDays(1) - DateTime.Now).TotalMinutes} мин.\n\n" + string.Join(", ", ips));
                         }
 
                         httpContext.Features.Set(info.user);
@@ -101,7 +104,7 @@ namespace TSApi.Engine.Middlewares
                     }
                     else
                     {
-                        httpContext.Response.StatusCode = 403;
+                        httpContext.Response.StatusCode = 404;
                         return Task.CompletedTask;
                     }
                 }
@@ -125,16 +128,20 @@ namespace TSApi.Engine.Middlewares
 
                     if (Startup.usersDb.TryGetValue(login, out UserData _u) && _u.passwd == passwd)
                     {
-                        if (!_u.IsShared && IsLockHostOrUser(httpContext, _u.login))
+                        if (!_u.IsShared && IsLockHostOrUser(httpContext, _u, out HashSet<string> ips))
                         {
                             httpContext.Response.StatusCode = 403;
-                            return httpContext.Response.WriteAsync($"you ban to {DateTime.Today.AddDays(1).ToString("dd.MM.yyyy hh:mm")}, server time {DateTime.Now.ToString("dd.MM.yyyy hh:mm")}");
+                            httpContext.Response.ContentType = "text/plain; charset=UTF-8";
+                            return httpContext.Response.WriteAsync($"Превышено допустимое количество ip. Разбан через {(int)(DateTime.Today.AddDays(1) - DateTime.Now).TotalMinutes} мин.\n\n" + string.Join(", ", ips));
                         }
 
                         httpContext.Features.Set(_u);
                         return _next(httpContext);
                     }
                 }
+
+                if (httpContext.Request.Path.Value.StartsWith("/echo"))
+                    return httpContext.Response.WriteAsync("MatriX.API");
 
                 httpContext.Response.StatusCode = 401;
                 httpContext.Response.Headers.Add("Www-Authenticate", "Basic realm=Authorization Required");

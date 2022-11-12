@@ -1,6 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
@@ -19,7 +18,7 @@ namespace TSApi.Controllers
                 return "ip != 127.0.0.1";
 
             if (System.IO.File.Exists($"{Startup.settings.appfolder}/usersDb.json"))
-                Startup.usersDb = JsonConvert.DeserializeObject<Dictionary<string, UserData>>(System.IO.File.ReadAllText($"{Startup.settings.appfolder}/usersDb.json"));
+                Startup.usersDb = JsonConvert.DeserializeObject<ConcurrentDictionary<string, UserData>>(System.IO.File.ReadAllText($"{Startup.settings.appfolder}/usersDb.json"));
 
             return "ok";
         }
@@ -44,8 +43,8 @@ namespace TSApi.Controllers
                 {
                     if (node.Value.countError >= 2 || DateTime.Now.AddMinutes(-Startup.settings.worknodetominutes) > node.Value.lastActive)
                     {
+                        TorAPI.db.TryRemove(node.Key, out _);
                         node.Value.Dispose();
-                        TorAPI.db.Remove(node.Key);
                     }
                     else
                     {

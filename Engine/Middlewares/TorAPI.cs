@@ -1,7 +1,7 @@
 ﻿using TSApi.Models;
 using Microsoft.AspNetCore.Http;
 using System.Threading.Tasks;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.IO;
 using System;
 using System.Threading;
@@ -20,7 +20,7 @@ namespace TSApi.Engine.Middlewares
 
         static Random random = new Random();
 
-        public static Dictionary<string, TorInfo> db = new Dictionary<string, TorInfo>();
+        public static ConcurrentDictionary<string, TorInfo> db = new ConcurrentDictionary<string, TorInfo>();
 
         public TorAPI(RequestDelegate next)
         {
@@ -49,11 +49,15 @@ namespace TSApi.Engine.Middlewares
                         {
                             client.Timeout = TimeSpan.FromSeconds(2);
 
-                            var response = await client.GetAsync($"http://127.0.0.1:{port}", HttpCompletionOption.ResponseHeadersRead, httpContext.RequestAborted);
+                            var response = await client.GetAsync($"http://127.0.0.1:{port}/echo", httpContext.RequestAborted);
                             if (response.StatusCode == System.Net.HttpStatusCode.OK)
                             {
-                                servIsWork = true;
-                                break;
+                                string echo = await response.Content.ReadAsStringAsync();
+                                if (echo.StartsWith("MatriX."))
+                                {
+                                    servIsWork = true;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -90,17 +94,23 @@ namespace TSApi.Engine.Middlewares
             if (!db.TryGetValue(dbKeyOrLogin, out TorInfo info))
             {
                 string inDir = Startup.settings.appfolder;
-                string torPath = userData.torPath ?? "master";
+
+                string domaintoPath = Regex.Match(httpContext.Request.Host.Value, "^[^\\.]+\\.([0-9]+)\\.").Groups[1].Value;
+                string torPath = userData.torPath ?? (File.Exists($"{inDir}/dl/{domaintoPath}/TorrServer-linux-amd64") ? domaintoPath : "master");
 
                 #region TorInfo
                 info = new TorInfo()
                 {
                     user = userData,
-                    port = random.Next(60000, 62000),
+                    port = random.Next(40000, 60000),
                     lastActive = DateTime.Now
                 };
 
-                db.Add(dbKeyOrLogin, info);
+                if (!db.TryAdd(dbKeyOrLogin, info))
+                {
+                    await httpContext.Response.WriteAsync("error: db.TryAdd(dbKeyOrLogin, info)");
+                    return;
+                }
                 #endregion
 
                 #region Создаем папку пользователя
@@ -156,8 +166,8 @@ namespace TSApi.Engine.Middlewares
                 #region Проверяем доступность сервера
                 if (await CheckPort(info.port, httpContext) == false)
                 {
+                    db.TryRemove(dbKeyOrLogin, out _);
                     info.Dispose();
-                    db.Remove(dbKeyOrLogin);
                     return;
                 }
                 #endregion
@@ -165,8 +175,8 @@ namespace TSApi.Engine.Middlewares
                 #region Отслеживанием падение процесса
                 info.processForExit += (s, e) =>
                 {
+                    db.TryRemove(dbKeyOrLogin, out _);
                     info.Dispose();
-                    db.Remove(dbKeyOrLogin);
                 };
                 #endregion
             }
@@ -187,7 +197,7 @@ namespace TSApi.Engine.Middlewares
 
                 using (HttpClient client = new HttpClient())
                 {
-                    client.Timeout = TimeSpan.FromSeconds(2);
+                    client.Timeout = TimeSpan.FromSeconds(15);
 
                     #region Данные запроса
                     MemoryStream mem = new MemoryStream();
@@ -218,6 +228,7 @@ namespace TSApi.Engine.Middlewares
 
                     settingsJson = Regex.Replace(settingsJson, "\"ReaderReadAHead\":([0-9]+)", $"\"ReaderReadAHead\":{ReaderReadAHead}", RegexOptions.IgnoreCase);
                     settingsJson = Regex.Replace(settingsJson, "\"PreloadCache\":([0-9]+)", $"\"PreloadCache\":{PreloadCache}", RegexOptions.IgnoreCase);
+                    settingsJson = "{\"action\":\"set\",\"sets\":" + settingsJson + "}";
 
                     await client.PostAsync($"http://127.0.0.1:{info.port}/settings", new StringContent(settingsJson, Encoding.UTF8, "application/json"));
                     #endregion
@@ -266,7 +277,7 @@ namespace TSApi.Engine.Middlewares
                 }
             }
 
-            requestMessage.Headers.Host = uri.Authority;
+            requestMessage.Headers.Host = context.Request.Host.Value;// uri.Authority;
             requestMessage.RequestUri = uri;
             requestMessage.Method = new HttpMethod(request.Method);
 

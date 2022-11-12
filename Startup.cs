@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text.Json.Serialization;
 using TSApi.Engine.Middlewares;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using Newtonsoft.Json;
 using TSApi.Models;
 using System.Net;
@@ -13,7 +13,7 @@ namespace TSApi
 {
     public class Startup
     {
-        public static Dictionary<string, UserData> usersDb = new Dictionary<string, UserData>();
+        public static ConcurrentDictionary<string, UserData> usersDb = new ConcurrentDictionary<string, UserData>();
 
         public static Setting settings = new Setting();
 
@@ -36,11 +36,11 @@ namespace TSApi
             #region load usersDb.json
             if (System.IO.File.Exists($"{settings.appfolder}/usersDb.json"))
             {
-                usersDb = JsonConvert.DeserializeObject<Dictionary<string, UserData>>(System.IO.File.ReadAllText($"{settings.appfolder}/usersDb.json"));
+                usersDb = JsonConvert.DeserializeObject<ConcurrentDictionary<string, UserData>>(System.IO.File.ReadAllText($"{settings.appfolder}/usersDb.json"));
             }
             else
             {
-                usersDb = new Dictionary<string, UserData>()
+                usersDb = new ConcurrentDictionary<string, UserData>()
                 {
                     ["ts"] = new UserData()
                     {

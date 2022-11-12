@@ -5,5 +5,5 @@
 /Properties
 /TSApi.csproj.user
 /obj
-/bin/Release/net5.0
-/.vs/TSApi
+/bin
+/.vs
