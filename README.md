@@ -14,3 +14,8 @@
 # Запуск на домене
 1. В settings.json ставим false для IPAddressAny
 2. В /etc/nginx/sites-enabled кидаем nginx.conf
+
+
+# Настройка
+1. Настройка API меняються в settings.json
+2. Список пользователей редактируется в usersDb.json
