@@ -5,8 +5,10 @@
 
 
 # Crontab
+```
 */5 *   *   *   *    curl -s "http://127.0.0.1:8090/cron/updateusersdb"
 *   *   *   *   *    curl -s "http://127.0.0.1:8090/cron/checkingnodes"
+```
 
 
 # Запуск на домене
