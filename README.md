@@ -3,6 +3,9 @@
 2. Загрузить и распаковать релиз https://github.com/immisterio/TSApi/releases в папку /opt/tsapi
 3. Запустить "dotnet TSApi.dll -d=/opt/tsapi"
 
+# Параметры
+1. Настройки TSApi меняються в settings.json
+2. Список пользователей редактируется в usersDb.json
 
 # Crontab
 ```
@@ -10,12 +13,7 @@
 *   *   *   *   *    curl -s "http://127.0.0.1:8090/cron/checkingnodes"
 ```
 
-
 # Запуск на домене
 1. В settings.json ставим false для IPAddressAny
 2. В /etc/nginx/sites-enabled кидаем nginx.conf
 
-
-# Настройка
-1. Настройка API меняються в settings.json
-2. Список пользователей редактируется в usersDb.json
