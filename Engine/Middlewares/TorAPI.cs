@@ -172,6 +172,34 @@ namespace TSApi.Engine.Middlewares
                 }
                 #endregion
 
+                #region Обновляем настройки по умолчанию
+                try
+                {
+                    using (HttpClient client = new HttpClient())
+                    {
+                        client.Timeout = TimeSpan.FromSeconds(15);
+
+                        var response = await client.PostAsync($"http://127.0.0.1:{info.port}/settings", new StringContent("{\"action\":\"get\"}", Encoding.UTF8, "application/json"));
+                        string settingsJson = await response.Content.ReadAsStringAsync();
+
+                        if (!string.IsNullOrWhiteSpace(settingsJson))
+                        {
+                            string requestJson = File.ReadAllText($"{inDir}/dl/settings.json");
+
+                            string ReaderReadAHead = Regex.Match(requestJson, "\"ReaderReadAHead\":([0-9]+)", RegexOptions.IgnoreCase).Groups[1].Value;
+                            string PreloadCache = Regex.Match(requestJson, "\"PreloadCache\":([0-9]+)", RegexOptions.IgnoreCase).Groups[1].Value;
+
+                            settingsJson = Regex.Replace(settingsJson, "\"ReaderReadAHead\":([0-9]+)", $"\"ReaderReadAHead\":{ReaderReadAHead}", RegexOptions.IgnoreCase);
+                            settingsJson = Regex.Replace(settingsJson, "\"PreloadCache\":([0-9]+)", $"\"PreloadCache\":{PreloadCache}", RegexOptions.IgnoreCase);
+                            settingsJson = "{\"action\":\"set\",\"sets\":" + settingsJson + "}";
+
+                            await client.PostAsync($"http://127.0.0.1:{info.port}/settings", new StringContent(settingsJson, Encoding.UTF8, "application/json"));
+                        }
+                    }
+                }
+                catch { }
+                #endregion
+
                 #region Отслеживанием падение процесса
                 info.processForExit += (s, e) =>
                 {
