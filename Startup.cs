@@ -13,6 +13,8 @@ namespace TSApi
 {
     public class Startup
     {
+        public static ConcurrentBag<IPNetwork> whiteip = new ConcurrentBag<IPNetwork>();
+
         public static ConcurrentDictionary<string, UserData> usersDb = new ConcurrentDictionary<string, UserData>();
 
         public static Setting settings = new Setting();
@@ -54,6 +56,27 @@ namespace TSApi
             }
             #endregion
 
+            #region load whiteip.txt
+            if (System.IO.File.Exists($"{settings.appfolder}/whiteip.txt"))
+            {
+                foreach (string ip in System.IO.File.ReadAllLines($"{settings.appfolder}/whiteip.txt"))
+                {
+                    if (string.IsNullOrWhiteSpace(ip))
+                        continue;
+
+                    if (ip.Contains("/"))
+                    {
+                        if (int.TryParse(ip.Split("/")[1], out int prefixLength))
+                            whiteip.Add(new IPNetwork(IPAddress.Parse(ip.Split("/")[0]), prefixLength));
+                    }
+                    else
+                    {
+                        whiteip.Add(new IPNetwork(IPAddress.Parse(ip), 0));
+                    }
+                }
+            }
+            #endregion
+
             #region IP клиента
             var forwarded = new ForwardedHeadersOptions
             {
@@ -72,6 +95,7 @@ namespace TSApi
             app.UseRouting();
             app.UseModHeaders();
             app.UseAccs();
+            app.UseIPTables();
             app.UseTorAPI();
 
             app.UseEndpoints(endpoints =>

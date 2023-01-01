@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Net;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using TSApi.Engine.Middlewares;
@@ -14,11 +16,40 @@ namespace TSApi.Controllers
         #region UpdateUsersDb
         public string UpdateUsersDb()
         {
-            if (HttpContext.Connection.RemoteIpAddress.ToString() != "127.0.0.1")
-                return "ip != 127.0.0.1";
-
             if (System.IO.File.Exists($"{Startup.settings.appfolder}/usersDb.json"))
                 Startup.usersDb = JsonConvert.DeserializeObject<ConcurrentDictionary<string, UserData>>(System.IO.File.ReadAllText($"{Startup.settings.appfolder}/usersDb.json"));
+
+            if (System.IO.File.Exists($"{Startup.settings.appfolder}/settings.json"))
+            {
+                var settings = JsonConvert.DeserializeObject<Setting>(System.IO.File.ReadAllText($"{Startup.settings.appfolder}/settings.json"));
+                Startup.settings.AuthorizationRequired = settings.AuthorizationRequired;
+                Startup.settings.maxiptoIsLockHostOrUser = settings.maxiptoIsLockHostOrUser;
+                Startup.settings.worknodetominutes = settings.worknodetominutes;
+            }
+
+            #region load whiteip.txt
+            if (System.IO.File.Exists($"{Startup.settings.appfolder}/whiteip.txt"))
+            {
+                ConcurrentBag<IPNetwork> whiteip = new ConcurrentBag<IPNetwork>();
+                foreach (string ip in System.IO.File.ReadAllLines($"{Startup.settings.appfolder}/whiteip.txt"))
+                {
+                    if (string.IsNullOrWhiteSpace(ip))
+                        continue;
+
+                    if (ip.Contains("/"))
+                    {
+                        if (int.TryParse(ip.Split("/")[1], out int prefixLength))
+                            whiteip.Add(new IPNetwork(IPAddress.Parse(ip.Split("/")[0]), prefixLength));
+                    }
+                    else
+                    {
+                        whiteip.Add(new IPNetwork(IPAddress.Parse(ip), 0));
+                    }
+                }
+
+                Startup.whiteip = whiteip;
+            }
+            #endregion
 
             return "ok";
         }
@@ -29,9 +60,6 @@ namespace TSApi.Controllers
 
         async public Task<string> CheckingNodes()
         {
-            if (HttpContext.Connection.RemoteIpAddress.ToString() != "127.0.0.1")
-                return "ip != 127.0.0.1";
-
             if (workCheckingNodes)
                 return "work";
 

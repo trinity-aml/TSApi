@@ -14,6 +14,11 @@ namespace TSApi.Engine.Middlewares
             return builder.UseMiddleware<Accs>();
         }
 
+        public static IApplicationBuilder UseIPTables(this IApplicationBuilder builder)
+        {
+            return builder.UseMiddleware<IPTables>();
+        }
+
         public static IApplicationBuilder UseTorAPI(this IApplicationBuilder builder)
         {
             return builder.UseMiddleware<TorAPI>();

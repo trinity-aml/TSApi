@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace TSApi.Models
 {
@@ -26,5 +27,7 @@ namespace TSApi.Models
 
         [JsonIgnore]
         public byte maxiptoIsLockHostOrUser { get; set; }
+
+        public List<string> whiteip { get; set; }
     }
 }

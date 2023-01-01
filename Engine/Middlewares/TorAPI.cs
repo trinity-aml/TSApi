@@ -21,9 +21,17 @@ namespace TSApi.Engine.Middlewares
 
         IMemoryCache memory;
 
-        static Random random = new Random();
-
         public static ConcurrentDictionary<string, TorInfo> db = new ConcurrentDictionary<string, TorInfo>();
+
+        static int currentport = 40000;
+        static int NextPort()
+        {
+            currentport = currentport + 1;
+            if (currentport > 60000)
+                currentport = 40000;
+
+            return currentport;
+        }
 
         public TorAPI(RequestDelegate next, IMemoryCache memory)
         {
@@ -79,17 +87,12 @@ namespace TSApi.Engine.Middlewares
 
         async public Task InvokeAsync(HttpContext httpContext)
         {
-            #region Служебный запрос
-            string clientIp = httpContext.Connection.RemoteIpAddress.ToString();
-
-            if (clientIp == "127.0.0.1" || httpContext.Request.Path.Value.StartsWith("/cron") || httpContext.Request.Path.Value.StartsWith("/torinfo") || httpContext.Request.Path.Value.StartsWith("/xrealip") || httpContext.Request.Path.Value.StartsWith("/headers"))
+            var userData = httpContext.Features.Get<UserData>();
+            if (userData.login == "service")
             {
                 await _next(httpContext);
                 return;
             }
-            #endregion
-
-            var userData = httpContext.Features.Get<UserData>();
 
             if (!userData.shutdown && httpContext.Request.Path.Value.StartsWith("/shutdown"))
                 return;
@@ -121,7 +124,7 @@ namespace TSApi.Engine.Middlewares
                 info = new TorInfo()
                 {
                     user = userData,
-                    port = random.Next(40000, 60000),
+                    port = NextPort(),
                     lastActive = DateTime.Now
                 };
 

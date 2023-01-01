@@ -5,8 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Text.RegularExpressions;
-using Microsoft.Extensions.Caching.Memory;
-using System.Collections.Generic;
 
 namespace TSApi.Engine.Middlewares
 {
@@ -15,40 +13,9 @@ namespace TSApi.Engine.Middlewares
         #region Accs
         private readonly RequestDelegate _next;
 
-        IMemoryCache memoryCache;
-
-        public Accs(RequestDelegate next, IMemoryCache memoryCache)
+        public Accs(RequestDelegate next)
         {
-            this.memoryCache = memoryCache;
             _next = next;
-        }
-        #endregion
-
-        #region IsLockHostOrUser
-        bool IsLockHostOrUser(HttpContext httpContext, UserData user, out HashSet<string> ips)
-        {
-            string memKeyLocIP = $"memKeyLocIP:{user.login}:{DateTime.Today.Day}";
-            string clientIP = httpContext.Connection.RemoteIpAddress.ToString();
-
-            if (memoryCache.TryGetValue(memKeyLocIP, out ips))
-            {
-                ips.Add(clientIP);
-                memoryCache.Set(memKeyLocIP, ips, DateTime.Today.AddDays(1));
-
-                int maxiptoIsLockHostOrUser = Startup.settings.maxiptoIsLockHostOrUser;
-                if (user.maxiptoIsLockHostOrUser > 0)
-                    maxiptoIsLockHostOrUser = user.maxiptoIsLockHostOrUser;
-
-                if (ips.Count > maxiptoIsLockHostOrUser)
-                    return true;
-            }
-            else
-            {
-                ips = new HashSet<string>() { clientIP };
-                memoryCache.Set(memKeyLocIP, ips, DateTime.Today.AddDays(1));
-            }
-
-            return false;
         }
         #endregion
 
@@ -58,7 +25,14 @@ namespace TSApi.Engine.Middlewares
             string clientIp = httpContext.Connection.RemoteIpAddress.ToString();
 
             if (clientIp == "127.0.0.1" || httpContext.Request.Path.Value.StartsWith("/cron") || httpContext.Request.Path.Value.StartsWith("/torinfo") || httpContext.Request.Path.Value.StartsWith("/xrealip") || httpContext.Request.Path.Value.StartsWith("/headers"))
+            {
+                httpContext.Features.Set(new UserData()
+                {
+                    login = "service"
+                });
+
                 return _next(httpContext);
+            }
             #endregion
 
             if (Startup.settings.AuthorizationRequired)
@@ -69,13 +43,6 @@ namespace TSApi.Engine.Middlewares
                 UserData _domainUser = Startup.usersDb.FirstOrDefault(i => i.Value.domainid == domainid).Value;
                 if (_domainUser != null)
                 {
-                    if (!_domainUser.IsShared && IsLockHostOrUser(httpContext, _domainUser, out HashSet<string> ips))
-                    {
-                        httpContext.Response.StatusCode = 403;
-                        httpContext.Response.ContentType = "text/plain; charset=UTF-8";
-                        return httpContext.Response.WriteAsync($"Превышено допустимое количество ip. Разбан через {(int)(DateTime.Today.AddDays(1) - DateTime.Now).TotalMinutes} мин.\n\n" + string.Join(", ", ips));
-                    }
-
                     httpContext.Features.Set(_domainUser);
                     return _next(httpContext);
                 }
@@ -86,13 +53,6 @@ namespace TSApi.Engine.Middlewares
                 {
                     if (TorAPI.db.LastOrDefault(i => i.Value.clientIps.Contains(clientIp)).Value is TorInfo info)
                     {
-                        if (!info.user.IsShared && IsLockHostOrUser(httpContext, info.user, out HashSet<string> ips))
-                        {
-                            httpContext.Response.StatusCode = 403;
-                            httpContext.Response.ContentType = "text/plain; charset=UTF-8";
-                            return httpContext.Response.WriteAsync($"Превышено допустимое количество ip. Разбан через {(int)(DateTime.Today.AddDays(1) - DateTime.Now).TotalMinutes} мин.\n\n" + string.Join(", ", ips));
-                        }
-
                         httpContext.Features.Set(info.user);
                         return _next(httpContext);
                     }
@@ -122,13 +82,6 @@ namespace TSApi.Engine.Middlewares
 
                     if (Startup.usersDb.TryGetValue(login, out UserData _u) && _u.passwd == passwd)
                     {
-                        if (!_u.IsShared && IsLockHostOrUser(httpContext, _u, out HashSet<string> ips))
-                        {
-                            httpContext.Response.StatusCode = 403;
-                            httpContext.Response.ContentType = "text/plain; charset=UTF-8";
-                            return httpContext.Response.WriteAsync($"Превышено допустимое количество ip. Разбан через {(int)(DateTime.Today.AddDays(1) - DateTime.Now).TotalMinutes} мин.\n\n" + string.Join(", ", ips));
-                        }
-
                         httpContext.Features.Set(_u);
                         return _next(httpContext);
                     }
