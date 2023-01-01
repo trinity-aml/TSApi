@@ -61,12 +61,6 @@ namespace TSApi.Engine.Middlewares
                 return _next(httpContext);
             #endregion
 
-            #region Методы работающие без авторизации
-            if (httpContext.Request.Path.Value.StartsWith("/shutdown"))
-                return httpContext.Response.WriteAsync("");
-            #endregion
-
-
             if (Startup.settings.AuthorizationRequired)
             {
                 #region Авторизация по домену

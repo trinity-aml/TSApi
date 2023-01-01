@@ -87,6 +87,9 @@ namespace TSApi.Engine.Middlewares
 
             var userData = httpContext.Features.Get<UserData>();
 
+            if (!userData.shutdown && httpContext.Request.Path.Value.StartsWith("/shutdown"))
+                return;
+
             string dbKeyOrLogin = userData.login;
             if (userData.IsShared)
                 dbKeyOrLogin = $"{userData.login}:{httpContext.Connection.RemoteIpAddress}";
@@ -280,6 +283,12 @@ namespace TSApi.Engine.Middlewares
                 await CopyProxyHttpResponse(httpContext, response, info);
             }
             #endregion
+
+            if (httpContext.Request.Path.Value.StartsWith("/shutdown")) 
+            {
+                db.TryRemove(dbKeyOrLogin, out _);
+                info.Dispose();
+            }
         }
 
 
