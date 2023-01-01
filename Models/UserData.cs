@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace TSApi.Models
@@ -29,5 +30,7 @@ namespace TSApi.Models
         public byte maxiptoIsLockHostOrUser { get; set; }
 
         public List<string> whiteip { get; set; }
+
+        public DateTime expires { get; set; }
     }
 }

@@ -70,7 +70,12 @@ namespace TSApi.Engine.Middlewares
             if (userData.login == "service")
                 return _next(httpContext);
 
-            string clientIP = httpContext.Connection.RemoteIpAddress.ToString();
+            if (DateTime.Now > userData.expires)
+            {
+                httpContext.Response.StatusCode = 403;
+                httpContext.Response.ContentType = "text/plain; charset=UTF-8";
+                return httpContext.Response.WriteAsync("Доступ запрещен, причина: дата");
+            }
 
             if (!userData.IsShared && IsLockHostOrUser(httpContext, userData, out HashSet<string> ips))
             {
@@ -81,6 +86,8 @@ namespace TSApi.Engine.Middlewares
 
             if (userData.whiteip != null && userData.whiteip.Count > 0)
             {
+                string clientIP = httpContext.Connection.RemoteIpAddress.ToString();
+
                 var clientIPAddress = IPAddress.Parse(clientIP);
                 foreach (string whiteip in userData.whiteip)
                 {
