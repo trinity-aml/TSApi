@@ -70,7 +70,7 @@ namespace TSApi.Engine.Middlewares
             if (userData.login == "service")
                 return _next(httpContext);
 
-            if (DateTime.Now > userData.expires)
+            if (userData.expires != default && DateTime.Now > userData.expires)
             {
                 httpContext.Response.StatusCode = 403;
                 httpContext.Response.ContentType = "text/plain; charset=UTF-8";
