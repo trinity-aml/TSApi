@@ -180,7 +180,7 @@ namespace TSApi.Engine.Middlewares
                 {
                     using (HttpClient client = new HttpClient())
                     {
-                        client.Timeout = TimeSpan.FromSeconds(15);
+                        client.Timeout = TimeSpan.FromSeconds(10);
 
                         var response = await client.PostAsync($"http://127.0.0.1:{info.port}/settings", new StringContent("{\"action\":\"get\"}", Encoding.UTF8, "application/json"));
                         string settingsJson = await response.Content.ReadAsStringAsync();
@@ -188,15 +188,16 @@ namespace TSApi.Engine.Middlewares
                         if (!string.IsNullOrWhiteSpace(settingsJson))
                         {
                             string requestJson = File.ReadAllText($"{inDir}/dl/settings.json");
+                            requestJson = Regex.Replace(requestJson, "[\n\r\t ]+", "");
 
-                            string ReaderReadAHead = Regex.Match(requestJson, "\"ReaderReadAHead\":([0-9]+)", RegexOptions.IgnoreCase).Groups[1].Value;
-                            string PreloadCache = Regex.Match(requestJson, "\"PreloadCache\":([0-9]+)", RegexOptions.IgnoreCase).Groups[1].Value;
+                            string ReaderReadAHead = Regex.Match(settingsJson, "\"ReaderReadAHead\":([0-9]+)", RegexOptions.IgnoreCase).Groups[1].Value;
+                            string PreloadCache = Regex.Match(settingsJson, "\"PreloadCache\":([0-9]+)", RegexOptions.IgnoreCase).Groups[1].Value;
 
-                            settingsJson = Regex.Replace(settingsJson, "\"ReaderReadAHead\":([0-9]+)", $"\"ReaderReadAHead\":{ReaderReadAHead}", RegexOptions.IgnoreCase);
-                            settingsJson = Regex.Replace(settingsJson, "\"PreloadCache\":([0-9]+)", $"\"PreloadCache\":{PreloadCache}", RegexOptions.IgnoreCase);
-                            settingsJson = "{\"action\":\"set\",\"sets\":" + settingsJson + "}";
+                            requestJson = Regex.Replace(requestJson, "\"ReaderReadAHead\":([0-9]+)", $"\"ReaderReadAHead\":{ReaderReadAHead}", RegexOptions.IgnoreCase);
+                            requestJson = Regex.Replace(requestJson, "\"PreloadCache\":([0-9]+)", $"\"PreloadCache\":{PreloadCache}", RegexOptions.IgnoreCase);
+                            requestJson = "{\"action\":\"set\",\"sets\":" + requestJson + "}";
 
-                            await client.PostAsync($"http://127.0.0.1:{info.port}/settings", new StringContent(settingsJson, Encoding.UTF8, "application/json"));
+                            await client.PostAsync($"http://127.0.0.1:{info.port}/settings", new StringContent(requestJson, Encoding.UTF8, "application/json"));
                         }
                     }
                 }
