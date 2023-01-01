@@ -11,6 +11,9 @@ namespace TSApi.Models
     {
         public int port { get; set; }
 
+        [JsonIgnore]
+        public bool work { get; set; }
+
         public HashSet<string> clientIps { get; set; } = new HashSet<string>();
 
         public UserData user { get; set; }
@@ -44,37 +47,42 @@ namespace TSApi.Models
             if (IsDispose)
                 return;
 
-            IsDispose = true;
-
-            #region process
             try
             {
-                process.Kill(true);
-                process.Dispose();
-            }
-            catch { }
-            #endregion
+                IsDispose = true;
+                work = false;
 
-            #region Bash
-            try
-            {
-                foreach (string line in Bash.Run($"ps axu | grep \"/TorrServer-linux-amd64 -p {port} -d\" " + "| grep -v grep | awk '{print $2}'").Split("\n"))
+                #region process
+                try
                 {
-                    if (int.TryParse(line, out int pid))
-                        Bash.Run($"kill -9 {pid}");
+                    process.Kill(true);
+                    process.Dispose();
                 }
+                catch { }
+                #endregion
+
+                #region Bash
+                try
+                {
+                    foreach (string line in Bash.Run($"ps axu | grep \"/TorrServer-linux-amd64 -p {port} -d\" " + "| grep -v grep | awk '{print $2}'").Split("\n"))
+                    {
+                        if (int.TryParse(line, out int pid))
+                            Bash.Run($"kill -9 {pid}");
+                    }
+                }
+                catch { }
+                #endregion
+
+                if (user.IsShared)
+                {
+                    foreach (var ip in clientIps)
+                        Bash.Run($"rm -rf {Startup.settings.appfolder}/sandbox/{user.login}/{ip.Replace(".", "").Replace(":", "")}");
+                }
+
+                clientIps.Clear();
+                thread = null;
             }
             catch { }
-            #endregion
-
-            if (user.IsShared)
-            {
-                foreach (var ip in clientIps)
-                    Bash.Run($"rm -rf {Startup.settings.appfolder}/sandbox/{user.login}/{ip.Replace(".", "").Replace(":", "")}");
-            }
-
-            clientIps.Clear();
-            thread = null;
         }
         #endregion
     }

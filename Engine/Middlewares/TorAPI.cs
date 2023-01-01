@@ -10,6 +10,7 @@ using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Net.Http.Headers;
 using System.Text;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace TSApi.Engine.Middlewares
 {
@@ -18,13 +19,16 @@ namespace TSApi.Engine.Middlewares
         #region TorAPI
         private readonly RequestDelegate _next;
 
+        IMemoryCache memory;
+
         static Random random = new Random();
 
         public static ConcurrentDictionary<string, TorInfo> db = new ConcurrentDictionary<string, TorInfo>();
 
-        public TorAPI(RequestDelegate next)
+        public TorAPI(RequestDelegate next, IMemoryCache memory)
         {
             _next = next;
+            this.memory = memory;
         }
         #endregion
 
@@ -90,12 +94,24 @@ namespace TSApi.Engine.Middlewares
             if (!userData.shutdown && httpContext.Request.Path.Value.StartsWith("/shutdown"))
                 return;
 
+            string keyshutdown = $"TorAPI:shutdown:{userData.login}";
+            if (httpContext.Request.Path.Value.StartsWith("/shutdown"))
+            {
+                if (!userData.shutdown || memory.TryGetValue(keyshutdown, out _))
+                    return;
+
+                memory.Set(keyshutdown, 0, DateTime.Now.AddSeconds(10));
+            }
+
             string dbKeyOrLogin = userData.login;
             if (userData.IsShared)
                 dbKeyOrLogin = $"{userData.login}:{httpContext.Connection.RemoteIpAddress}";
 
             if (!db.TryGetValue(dbKeyOrLogin, out TorInfo info))
             {
+                if (httpContext.Request.Path.Value.StartsWith("/shutdown"))
+                    return;
+
                 string inDir = Startup.settings.appfolder;
 
                 string domaintoPath = Regex.Match(httpContext.Request.Host.Value, "^[^\\.]+\\.([0-9]+)\\.").Groups[1].Value;
@@ -169,11 +185,13 @@ namespace TSApi.Engine.Middlewares
                 #region Проверяем доступность сервера
                 if (await CheckPort(info.port, httpContext) == false)
                 {
+                    info?.Dispose();
                     db.TryRemove(dbKeyOrLogin, out _);
-                    info.Dispose();
                     return;
                 }
                 #endregion
+
+                info.work = true;
 
                 #region Обновляем настройки по умолчанию
                 try
@@ -207,11 +225,14 @@ namespace TSApi.Engine.Middlewares
                 #region Отслеживанием падение процесса
                 info.processForExit += (s, e) =>
                 {
+                    info?.Dispose();
                     db.TryRemove(dbKeyOrLogin, out _);
-                    info.Dispose();
                 };
                 #endregion
             }
+
+            if (!info.work)
+                return;
 
             // Обновляем IP клиента и время последнего запроса
             info.clientIps.Add(httpContext.Connection.RemoteIpAddress.ToString());
@@ -287,8 +308,8 @@ namespace TSApi.Engine.Middlewares
 
             if (httpContext.Request.Path.Value.StartsWith("/shutdown")) 
             {
+                info?.Dispose();
                 db.TryRemove(dbKeyOrLogin, out _);
-                info.Dispose();
             }
         }
 
