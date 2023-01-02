@@ -207,28 +207,31 @@ namespace TSApi.Engine.Middlewares
                 #region Обновляем настройки по умолчанию
                 try
                 {
-                    using (HttpClient client = new HttpClient())
+                    if (userData.setdefaultsettings)
                     {
-                        client.Timeout = TimeSpan.FromSeconds(10);
-
-                        var response = await client.PostAsync($"http://127.0.0.1:{info.port}/settings", new StringContent("{\"action\":\"get\"}", Encoding.UTF8, "application/json"));
-                        string settingsJson = await response.Content.ReadAsStringAsync();
-
-                        if (!string.IsNullOrWhiteSpace(settingsJson))
+                        using (HttpClient client = new HttpClient())
                         {
-                            string requestJson = File.ReadAllText($"{inDir}/dl/settings.json");
-                            requestJson = Regex.Replace(requestJson, "[\n\r\t ]+", "");
+                            client.Timeout = TimeSpan.FromSeconds(10);
 
-                            string ReaderReadAHead = Regex.Match(settingsJson, "\"ReaderReadAHead\":([0-9]+)", RegexOptions.IgnoreCase).Groups[1].Value;
-                            string PreloadCache = Regex.Match(settingsJson, "\"PreloadCache\":([0-9]+)", RegexOptions.IgnoreCase).Groups[1].Value;
+                            var response = await client.PostAsync($"http://127.0.0.1:{info.port}/settings", new StringContent("{\"action\":\"get\"}", Encoding.UTF8, "application/json"));
+                            string settingsJson = await response.Content.ReadAsStringAsync();
 
-                            requestJson = Regex.Replace(requestJson, "\"ReaderReadAHead\":([0-9]+)", $"\"ReaderReadAHead\":{ReaderReadAHead}", RegexOptions.IgnoreCase);
-                            requestJson = Regex.Replace(requestJson, "\"PreloadCache\":([0-9]+)", $"\"PreloadCache\":{PreloadCache}", RegexOptions.IgnoreCase);
-
-                            if (requestJson != settingsJson)
+                            if (!string.IsNullOrWhiteSpace(settingsJson))
                             {
-                                requestJson = "{\"action\":\"set\",\"sets\":" + requestJson + "}";
-                                await client.PostAsync($"http://127.0.0.1:{info.port}/settings", new StringContent(requestJson, Encoding.UTF8, "application/json"));
+                                string requestJson = File.ReadAllText($"{inDir}/dl/settings.json");
+                                requestJson = Regex.Replace(requestJson, "[\n\r\t ]+", "");
+
+                                string ReaderReadAHead = Regex.Match(settingsJson, "\"ReaderReadAHead\":([0-9]+)", RegexOptions.IgnoreCase).Groups[1].Value;
+                                string PreloadCache = Regex.Match(settingsJson, "\"PreloadCache\":([0-9]+)", RegexOptions.IgnoreCase).Groups[1].Value;
+
+                                requestJson = Regex.Replace(requestJson, "\"ReaderReadAHead\":([0-9]+)", $"\"ReaderReadAHead\":{ReaderReadAHead}", RegexOptions.IgnoreCase);
+                                requestJson = Regex.Replace(requestJson, "\"PreloadCache\":([0-9]+)", $"\"PreloadCache\":{PreloadCache}", RegexOptions.IgnoreCase);
+
+                                if (requestJson != settingsJson)
+                                {
+                                    requestJson = "{\"action\":\"set\",\"sets\":" + requestJson + "}";
+                                    await client.PostAsync($"http://127.0.0.1:{info.port}/settings", new StringContent(requestJson, Encoding.UTF8, "application/json"));
+                                }
                             }
                         }
                     }

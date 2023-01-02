@@ -27,6 +27,9 @@ namespace TSApi.Models
         public bool shutdown { get; set; }
 
         [JsonIgnore]
+        public bool setdefaultsettings { get; set; } = true;
+
+        [JsonIgnore]
         public byte maxiptoIsLockHostOrUser { get; set; }
 
         public List<string> whiteip { get; set; }
