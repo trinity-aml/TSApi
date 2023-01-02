@@ -196,6 +196,14 @@ namespace TSApi.Engine.Middlewares
 
                 info.work = true;
 
+                #region Отслеживанием падение процесса
+                info.processForExit += (s, e) =>
+                {
+                    info?.Dispose();
+                    db.TryRemove(dbKeyOrLogin, out _);
+                };
+                #endregion
+
                 #region Обновляем настройки по умолчанию
                 try
                 {
@@ -216,21 +224,16 @@ namespace TSApi.Engine.Middlewares
 
                             requestJson = Regex.Replace(requestJson, "\"ReaderReadAHead\":([0-9]+)", $"\"ReaderReadAHead\":{ReaderReadAHead}", RegexOptions.IgnoreCase);
                             requestJson = Regex.Replace(requestJson, "\"PreloadCache\":([0-9]+)", $"\"PreloadCache\":{PreloadCache}", RegexOptions.IgnoreCase);
-                            requestJson = "{\"action\":\"set\",\"sets\":" + requestJson + "}";
 
-                            await client.PostAsync($"http://127.0.0.1:{info.port}/settings", new StringContent(requestJson, Encoding.UTF8, "application/json"));
+                            if (requestJson != settingsJson)
+                            {
+                                requestJson = "{\"action\":\"set\",\"sets\":" + requestJson + "}";
+                                await client.PostAsync($"http://127.0.0.1:{info.port}/settings", new StringContent(requestJson, Encoding.UTF8, "application/json"));
+                            }
                         }
                     }
                 }
                 catch { }
-                #endregion
-
-                #region Отслеживанием падение процесса
-                info.processForExit += (s, e) =>
-                {
-                    info?.Dispose();
-                    db.TryRemove(dbKeyOrLogin, out _);
-                };
                 #endregion
             }
 
