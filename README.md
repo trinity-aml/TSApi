@@ -5,7 +5,7 @@
 
 # Параметры
 1. Настройки TSApi меняються в settings.json
-
+```
 {
   "port": 8090,
   "IPAddressAny": true,
@@ -19,9 +19,9 @@
     }
   ]
 }
-
+```
 2. Список пользователей редактируется в usersDb.json
-
+```
 {
   "ts": {
     "login": "ts",
@@ -38,7 +38,7 @@
     "allowedToChangeSettings": false, // can't change settings
   }
 }
-
+```
 # Crontab
 ```
 */5 *   *   *   *    curl -s "http://127.0.0.1:8090/cron/updateusersdb"
