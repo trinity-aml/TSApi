@@ -364,7 +364,7 @@ namespace TSApi.Engine.Middlewares
             {
                 foreach (var header in headers)
                 {
-                    if (header.Key.ToLower() is "transfer-encoding" or "etag" or "connection")
+                    if (header.Key.ToLower() is "transfer-encoding" or "etag" or "connection" or "content-disposition")
                         continue;
 
                     string value = string.Empty;
